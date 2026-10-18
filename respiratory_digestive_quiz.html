@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>呼吸系統和消化系統 · 小測</title>
+<style>
+  :root {
+    --bg: #f0f7ff;
+    --card: #ffffff;
+    --primary: #4a90e2;
+    --primary-dark: #357abd;
+    --correct: #2ecc71;
+    --correct-bg: #e8faf0;
+    --wrong: #e74c3c;
+    --wrong-bg: #fdecea;
+    --text: #2c3e50;
+    --muted: #7f8c8d;
+    --soft: #e8f0fe;
+    --accent: #ff9f43;
+    --shadow: 0 4px 16px rgba(74, 144, 226, 0.15);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif;
+    background: linear-gradient(160deg, #e8f4fd 0%, #fef6e8 50%, #f0e8fd 100%);
+    color: var(--text);
+    min-height: 100dvh;
+    padding: 12px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-bottom: 24px;
+  }
+  header {
+    text-align: center;
+    padding: 16px 8px 8px;
+  }
+  header .emoji { font-size: 2.2rem; }
+  header h1 {
+    font-size: 1.35rem;
+    margin-top: 6px;
+    color: var(--primary-dark);
+  }
+  header p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .progress-wrap {
+    background: #fff;
+    border-radius: 999px;
+    height: 12px;
+    margin: 12px 0 8px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4a90e2, #6bcb77);
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
+  .progress-label {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    box-shadow: var(--shadow);
+  }
+  .q-num {
+    display: inline-block;
+    background: var(--soft);
+    color: var(--primary-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .q-badge {
+    display: inline-block;
+    background: #fff3e0;
+    color: #e67e22;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-left: 6px;
+  }
+  .question {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    background: #f7fafc;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 14px;
+    font-size: 1.05rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .opt:active:not(:disabled) { transform: scale(0.98); }
+  .opt:hover:not(:disabled) { border-color: var(--primary); background: #eef5ff; }
+  .opt .letter {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #cbd5e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--primary-dark);
+  }
+  .opt .text { flex: 1; padding-top: 3px; }
+  .opt.selected {
+    border-color: var(--primary);
+    background: #e8f0fe;
+  }
+  .opt.selected .letter {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .opt.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .opt.correct .letter {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #fff;
+  }
+  .opt.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+  .opt.wrong .letter {
+    background: var(--wrong);
+    border-color: var(--wrong);
+    color: #fff;
+  }
+  .opt:disabled { cursor: default; opacity: 1; }
+  .opt.dim { opacity: 0.55; }
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 0.98rem;
+    display: none;
+    line-height: 1.55;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok {
+    background: var(--correct-bg);
+    border: 2px solid var(--correct);
+    color: #1a7a45;
+  }
+  .feedback.bad {
+    background: var(--wrong-bg);
+    border: 2px solid var(--wrong);
+    color: #a93226;
+  }
+  .feedback .fb-title {
+    font-weight: 800;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+  .actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 20px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, opacity 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, #4a90e2, #5b6ee1);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(74,144,226,0.35);
+  }
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--primary-dark);
+    border: 2px solid var(--primary);
+  }
+  .btn-accent {
+    background: linear-gradient(135deg, #ff9f43, #f39c12);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(255,159,67,0.35);
+  }
+  /* Start / Result screens */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .start-card, .result-card {
+    text-align: center;
+    padding: 28px 20px;
+  }
+  .start-card .big-emoji { font-size: 3.5rem; margin-bottom: 8px; }
+  .start-card h2 { font-size: 1.4rem; margin-bottom: 8px; color: var(--primary-dark); }
+  .start-card ul {
+    text-align: left;
+    margin: 16px auto;
+    max-width: 280px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    list-style: none;
+  }
+  .start-card ul li { padding: 6px 0; }
+  .start-card ul li::before { content: "✓ "; color: var(--correct); font-weight: 700; }
+  .score-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    margin: 12px auto 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #e8f0fe, #fff);
+    border: 6px solid var(--primary);
+    box-shadow: var(--shadow);
+  }
+  .score-circle .num {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    line-height: 1;
+  }
+  .score-circle .den {
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .score-msg {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .score-sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .review {
+    text-align: left;
+    margin-top: 8px;
+  }
+  .review h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: var(--wrong);
+  }
+  .review-item {
+    background: var(--wrong-bg);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    border-left: 4px solid var(--wrong);
+  }
+  .review-item .rq { font-weight: 700; margin-bottom: 4px; }
+  .review-item .ra { color: #1a7a45; }
+  .review-item .ry { color: #a93226; }
+  .all-correct {
+    background: var(--correct-bg);
+    border-radius: 12px;
+    padding: 16px;
+    color: #1a7a45;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="emoji">🫁🍎</div>
+    <h1>呼吸系統和消化系統</h1>
+    <p>常識 Unit 3 · 小五温習小測</p>
+  </header>
+
+  <!-- START -->
+  <div id="startScreen" class="screen active">
+    <div class="card start-card">
+      <div class="big-emoji">📝✨</div>
+      <h2>準備好未？</h2>
+      <p style="color:var(--muted);font-size:0.95rem;">共 12 題，一題一題答，即時知啱唔啱！</p>
+      <ul>
+        <li>大部分係單選題</li>
+        <li>第 10 題可以揀多過一個</li>
+        <li>答完有短解釋</li>
+        <li>最後睇分數同錯題</li>
+      </ul>
+      <button class="btn btn-primary" id="startBtn" style="width:100%;margin-top:8px;">開始小測 🚀</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quizScreen" class="screen">
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">第 1 / 12 題</div>
+    <div class="card" id="quizCard">
+      <div>
+        <span class="q-num" id="qNum">第 1 題</span>
+        <span class="q-badge hidden" id="multiBadge">可多選</span>
+      </div>
+      <div class="question" id="qText"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback">
+        <div class="fb-title" id="fbTitle"></div>
+        <div id="fbBody"></div>
+      </div>
+      <div class="actions" id="actions">
+        <button class="btn btn-primary hidden" id="checkBtn">確認答案 ✓</button>
+        <button class="btn btn-primary hidden" id="nextBtn">下一題 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultScreen" class="screen">
+    <div class="card result-card">
+      <div class="big-emoji" id="resultEmoji">🎉</div>
+      <h2>小測完成！</h2>
+      <div class="score-circle">
+        <span class="num" id="scoreNum">0</span>
+        <span class="den">/ 12 分</span>
+      </div>
+      <div class="score-msg" id="scoreMsg"></div>
+      <div class="score-sub" id="scoreSub"></div>
+      <div id="reviewBox"></div>
+      <button class="btn btn-accent" id="retryBtn" style="width:100%;margin-top:8px;">再試一次 🔄</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "空氣中約佔五分之四嘅氣體係邊種？",
+    options: ["氧氣", "二氧化碳", "氮氣", "水蒸氣"],
+    answer: [2],
+    multi: false,
+    explain: "空氣入面氮氣大約佔五分之四（約 78%），最多！氧氣只係大約五分之一。"
+  },
+  {
+    q: "空氣中約佔五分之一嘅氣體係邊種？",
+    options: ["氮氣", "氧氣", "二氧化碳", "氫氣"],
+    answer: [1],
+    multi: false,
+    explain: "氧氣大約佔空氣五分之一（約 21%）。二氧化碳同氫氣都只係好少量。"
+  },
+  {
+    q: "同吸入嘅氣體比較，呼出嘅氣體入面氧氣含量會……",
+    options: ["升高", "降低", "不變", "變成零"],
+    answer: [1],
+    multi: false,
+    explain: "身體用咗氧氣，所以呼出嘅氣體入面氧氣會減少（降低），但唔會變成零。"
+  },
+  {
+    q: "同吸入嘅氣體比較，呼出嘅氣體入面二氧化碳含量會……",
+    options: ["升高", "降低", "不變", "變成零"],
+    answer: [0],
+    multi: false,
+    explain: "細胞呼吸產生二氧化碳，所以呼出嘅氣體入面二氧化碳會升高。"
+  },
+  {
+    q: "用邊樣嘢可以證明呼出嘅氣體含有二氧化碳？",
+    options: ["清水變濁", "石灰水變濁", "鹽水變甜", "糖水變酸"],
+    answer: [1],
+    multi: false,
+    explain: "二氧化碳會令石灰水變濁，呢個係經典實驗證據！"
+  },
+  {
+    q: "呼吸系統入面，負責過濾灰塵、吸入空氣嘅係邊個部分？",
+    options: ["肺", "鼻", "氣管", "支氣管"],
+    answer: [1],
+    multi: false,
+    explain: "鼻入面有鼻毛同黏液，可以過濾灰塵，再吸入空氣。"
+  },
+  {
+    q: "進行氣體交換、吸入氧氣並排出二氧化碳嘅器官係邊個？",
+    options: ["鼻", "氣管", "支氣管", "肺"],
+    answer: [3],
+    multi: false,
+    explain: "肺係進行氣體交換嘅地方：吸入氧氣、排出二氧化碳。"
+  },
+  {
+    q: "吸氣時，胸腔同肺部會點樣？",
+    options: ["胸腔縮小，肺部收縮", "胸腔擴大，肺部擴張", "胸腔擴大，肺部收縮", "胸腔縮小，肺部擴張"],
+    answer: [1],
+    multi: false,
+    explain: "吸氣時胸腔擴大，肺部跟住擴張，空氣就入去肺入面。"
+  },
+  {
+    q: "吸氣時，橫膈膜會點樣？",
+    options: ["放鬆拱起", "收縮平坦", "完全唔郁", "向上拱起再停"],
+    answer: [1],
+    multi: false,
+    explain: "吸氣時橫膈膜會收縮變平坦，令胸腔空間變大；呼氣時先放鬆拱起。"
+  },
+  {
+    q: "以下邊啲情況呼吸會比較急促？",
+    options: ["跳繩", "聽柔和音樂", "打籃球", "畫畫"],
+    answer: [0, 2],
+    multi: true,
+    explain: "跳繩同打籃球係劇烈活動，身體需要更多氧氣，呼吸會急促。聽音樂同畫畫較輕鬆。"
+  },
+  {
+    q: "消化系統入面，負責吸收養分嘅主要係邊個部分？",
+    options: ["胃", "食道", "小腸", "大腸"],
+    answer: [2],
+    multi: false,
+    explain: "小腸係吸收養分嘅主要地方。胃負責消化，大腸主要吸收水分。"
+  },
+  {
+    q: "食物消化過程嘅正確次序係？",
+    options: [
+      "口腔 → 胃 → 食道 → 小腸 → 大腸 → 肛門",
+      "口腔 → 食道 → 胃 → 小腸 → 大腸 → 肛門",
+      "口腔 → 食道 → 小腸 → 胃 → 大腸 → 肛門",
+      "口腔 → 食道 → 胃 → 大腸 → 小腸 → 肛門"
+    ],
+    answer: [1],
+    multi: false,
+    explain: "正確次序：口腔 → 食道 → 胃 → 小腸 → 大腸 → 肛門。記住先係食道入胃，再去小腸！"
+  }
+];
+
+const LETTERS = ["A", "B", "C", "D"];
+
+let idx = 0;
+let selected = [];
+let answered = false;
+let score = 0;
+let wrongs = [];
+
+const startScreen = document.getElementById("startScreen");
+const quizScreen = document.getElementById("quizScreen");
+const resultScreen = document.getElementById("resultScreen");
+const progressBar = document.getElementById("progressBar");
+const progressLabel = document.getElementById("progressLabel");
+const qNum = document.getElementById("qNum");
+const multiBadge = document.getElementById("multiBadge");
+const qText = document.getElementById("qText");
+const optionsEl = document.getElementById("options");
+const feedback = document.getElementById("feedback");
+const fbTitle = document.getElementById("fbTitle");
+const fbBody = document.getElementById("fbBody");
+const checkBtn = document.getElementById("checkBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+document.getElementById("startBtn").addEventListener("click", startQuiz);
+document.getElementById("retryBtn").addEventListener("click", startQuiz);
+checkBtn.addEventListener("click", checkAnswer);
+nextBtn.addEventListener("click", nextQuestion);
+
+function showScreen(el) {
+  [startScreen, quizScreen, resultScreen].forEach(s => s.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function startQuiz() {
+  idx = 0;
+  score = 0;
+  wrongs = [];
+  showScreen(quizScreen);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const item = QUESTIONS[idx];
+  selected = [];
+  answered = false;
+
+  progressBar.style.width = ((idx) / QUESTIONS.length * 100) + "%";
+  progressLabel.textContent = `第 ${idx + 1} / ${QUESTIONS.length} 題`;
+  qNum.textContent = `第 ${idx + 1} 題`;
+  qText.textContent = item.q;
+
+  if (item.multi) {
+    multiBadge.classList.remove("hidden");
+  } else {
+    multiBadge.classList.add("hidden");
+  }
+
+  feedback.classList.remove("show", "ok", "bad");
+  checkBtn.classList.add("hidden");
+  nextBtn.classList.add("hidden");
+  if (item.multi) {
+    checkBtn.classList.remove("hidden");
+    checkBtn.disabled = true;
+  }
+
+  optionsEl.innerHTML = "";
+  item.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "opt";
+    btn.dataset.i = i;
+    btn.innerHTML = `<span class="letter">${LETTERS[i]}</span><span class="text">${opt}</span>`;
+    btn.addEventListener("click", () => onSelect(i, btn));
+    optionsEl.appendChild(btn);
+  });
+}
+
+function onSelect(i, btn) {
+  if (answered) return;
+  const item = QUESTIONS[idx];
+
+  if (item.multi) {
+    const pos = selected.indexOf(i);
+    if (pos >= 0) {
+      selected.splice(pos, 1);
+      btn.classList.remove("selected");
+    } else {
+      selected.push(i);
+      btn.classList.add("selected");
+    }
+    selected.sort((a, b) => a - b);
+    checkBtn.disabled = selected.length === 0;
+  } else {
+    selected = [i];
+    Array.from(optionsEl.children).forEach(c => c.classList.remove("selected"));
+    btn.classList.add("selected");
+    checkAnswer();
+  }
+}
+
+function arraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function checkAnswer() {
+  if (answered || selected.length === 0) return;
+  answered = true;
+  const item = QUESTIONS[idx];
+  const correct = arraysEqual(selected, item.answer.slice().sort((a,b)=>a-b));
+
+  const btns = Array.from(optionsEl.children);
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    const isAns = item.answer.includes(i);
+    const isSel = selected.includes(i);
+    if (isAns) {
+      btn.classList.add("correct");
+      btn.classList.remove("selected");
+    } else if (isSel) {
+      btn.classList.add("wrong");
+      btn.classList.remove("selected");
+    } else {
+      btn.classList.add("dim");
+    }
+  });
+
+  checkBtn.classList.add("hidden");
+  feedback.classList.add("show");
+
+  if (correct) {
+    score++;
+    feedback.classList.add("ok");
+    feedback.classList.remove("bad");
+    fbTitle.textContent = "✅ 啱晒！好叻！";
+    fbBody.textContent = item.explain;
+  } else {
+    feedback.classList.add("bad");
+    feedback.classList.remove("ok");
+    fbTitle.textContent = "❌ 唔啱喎，睇吓解釋～";
+    const ansLetters = item.answer.map(i => LETTERS[i] + ". " + item.options[i]).join("、");
+    fbBody.innerHTML = `正確答案：<strong>${ansLetters}</strong><br>${item.explain}`;
+    wrongs.push({
+      num: idx + 1,
+      q: item.q,
+      yours: selected.map(i => LETTERS[i] + ". " + item.options[i]).join("、") || "（冇揀）",
+      correct: ansLetters,
+      explain: item.explain
+    });
+  }
+
+  nextBtn.classList.remove("hidden");
+  nextBtn.textContent = idx === QUESTIONS.length - 1 ? "睇成績 🏆" : "下一題 →";
+
+  progressBar.style.width = ((idx + 1) / QUESTIONS.length * 100) + "%";
+}
+
+function nextQuestion() {
+  if (idx < QUESTIONS.length - 1) {
+    idx++;
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  showScreen(resultScreen);
+  document.getElementById("scoreNum").textContent = score;
+
+  const pct = score / QUESTIONS.length;
+  let emoji, msg, sub;
+  if (pct === 1) {
+    emoji = "🏆"; msg = "滿分！你係呼吸消化小專家！"; sub = "全部都啱，太勁啦！";
+  } else if (pct >= 0.8) {
+    emoji = "🌟"; msg = "好叻呀！幾乎滿分！"; sub = "再温多幾題就完美！";
+  } else if (pct >= 0.6) {
+    emoji = "💪"; msg = "唔錯！繼續加油！"; sub = "睇吓下面錯題，之後再試一次。";
+  } else {
+    emoji = "📚"; msg = "再温多啲啦！"; sub = "唔緊要，睇完錯題再挑戰一次！";
+  }
+  document.getElementById("resultEmoji").textContent = emoji;
+  document.getElementById("scoreMsg").textContent = msg;
+  document.getElementById("scoreSub").textContent = sub;
+
+  const box = document.getElementById("reviewBox");
+  if (wrongs.length === 0) {
+    box.innerHTML = '<div class="all-correct">🎉 全部答啱，冇錯題要溫！</div>';
+  } else {
+    let html = `<div class="review"><h3>❌ 錯題温習（${wrongs.length} 題）</h3>`;
+    wrongs.forEach(w => {
+      html += `<div class="review-item">
+        <div class="rq">第 ${w.num} 題：${w.q}</div>
+        <div class="ry">你揀：${w.yours}</div>
+        <div class="ra">正確：${w.correct}</div>
+        <div style="margin-top:4px;color:var(--muted);">${w.explain}</div>
+      </div>`;
+    });
+    html += "</div>";
+    box.innerHTML = html;
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+</body>
+</html>
