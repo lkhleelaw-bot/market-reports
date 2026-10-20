@@ -134,6 +134,7 @@
       text-decoration: none;
       font-size: 0.88rem;
       font-weight: 600;
+      pointer-events: none;
     }
     .card a:hover { text-decoration: underline; }
     footer {
@@ -332,10 +333,8 @@
             <div class="note">${r.note}</div>
             <div class="meta"><strong>${r.status}</strong></div>
             <a href="${r.url}" target="_blank" rel="noopener">Official / source →</a>`;
-          card.addEventListener("click", (e) => {
-            if (e.target.tagName === "A") return;
-            map.setView([r.lat, r.lng], 5);
-            markers[r.id].openPopup();
+          card.addEventListener("click", () => {
+            window.open(r.url, "_blank", "noopener");
           });
           el.appendChild(card);
         });
@@ -343,10 +342,13 @@
     }
 
     const map = L.map("map", { scrollWheelZoom: false, worldCopyJump: true }).setView([20, 40], 2);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap &copy; CARTO",
-      maxZoom: 18
+    // Free OSM tiles — no API key. Dark styling via CSS filter on the pane.
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19
     }).addTo(map);
+    const pane = map.getPane("tilePane");
+    if (pane) pane.style.filter = "invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)";
 
     const markers = {};
     races.forEach(r => {
@@ -358,11 +360,12 @@
         iconAnchor: [7, 7]
       });
       const m = L.marker([r.lat, r.lng], { icon }).addTo(map);
-      m.bindPopup(`<strong>${r.name}</strong><br>${r.dates}<br>${r.place}<br><a href="${r.url}" target="_blank">Details</a>`);
+      m.bindPopup(`<strong>${r.name}</strong><br>${r.dates}<br>${r.place}<br><a href="${r.url}" target="_blank" rel="noopener">Open official page →</a>`);
       m.on("click", () => {
         document.querySelectorAll(".card").forEach(c => c.style.outline = "");
         const card = document.querySelector(`.card[data-id="${r.id}"]`);
         if (card) { card.style.outline = "2px solid #3dd6c6"; card.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+        window.open(r.url, "_blank", "noopener");
       });
       markers[r.id] = m;
     });
