@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>International Trail Races · Running Bot</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --card: #172238;
+      --line: #24314a;
+      --text: #e8eefc;
+      --muted: #93a0bb;
+      --accent: #ff6a3d;
+      --accent2: #3dd6c6;
+      --urgent: #ff4d6d;
+      --ok: #5eead4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2744 0%, var(--bg) 55%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 24px 12px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      letter-spacing: 0.02em;
+    }
+    header p { margin: 0; color: var(--muted); max-width: 720px; }
+    .badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,106,61,0.15);
+      color: var(--accent);
+      font-size: 0.8rem;
+      border: 1px solid rgba(255,106,61,0.35);
+    }
+    .layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px 48px;
+      display: grid;
+      gap: 20px;
+    }
+    #map {
+      height: min(52vh, 520px);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filters button {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .filters button.active, .filters button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    section h2 {
+      margin: 8px 0 12px;
+      font-size: 1.15rem;
+      color: var(--accent2);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: linear-gradient(160deg, var(--card), var(--panel));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform .15s ease, border-color .15s ease;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(61,214,198,0.45);
+    }
+    .card .tag {
+      align-self: flex-start;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255,77,109,0.15);
+      color: var(--urgent);
+      border: 1px solid rgba(255,77,109,0.35);
+    }
+    .card .tag.open {
+      background: rgba(94,234,212,0.12);
+      color: var(--ok);
+      border-color: rgba(94,234,212,0.35);
+    }
+    .card .tag.full {
+      background: rgba(147,160,187,0.12);
+      color: var(--muted);
+      border-color: var(--line);
+    }
+    .card h3 { margin: 0; font-size: 1.05rem; }
+    .card .meta { color: var(--muted); font-size: 0.88rem; }
+    .card .note { font-size: 0.9rem; color: #c9d4ef; }
+    .card a {
+      margin-top: auto;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .card a:hover { text-decoration: underline; }
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #121a2b;
+      color: #e8eefc;
+      border-radius: 10px;
+    }
+    .leaflet-popup-tip { background: #121a2b; }
+    .leaflet-popup-content a { color: #ff6a3d; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>International Trail Races</h1>
+    <p>海外越野賽速覽：地圖看位置，卡片看日期、距離同報名狀態。香港本地賽已排除。資料截至 2026-10-20。</p>
+    <span class="badge">Updated by Running Bot · weekly Monday digest</span>
+  </header>
+
+  <div class="layout">
+    <div id="map" aria-label="World map of trail races"></div>
+    <div class="filters" id="filters">
+      <button class="active" data-filter="all">全部</button>
+      <button data-filter="urgent">最急報名</button>
+      <button data-filter="upcoming">即將賽事</button>
+      <button data-filter="watch">留意中</button>
+    </div>
+
+    <section data-section="urgent">
+      <h2>最急 · Act soon</h2>
+      <div class="grid" id="urgent"></div>
+    </section>
+    <section data-section="upcoming">
+      <h2>即將賽事 · Upcoming</h2>
+      <div class="grid" id="upcoming"></div>
+    </section>
+    <section data-section="watch">
+      <h2>留意中 · Watch</h2>
+      <div class="grid" id="watch"></div>
+    </section>
+  </div>
+
+  <footer>
+    非正式 UTMB 網站。連結指向官方或可靠來源。報名狀態可能隨時轉變，請以官方頁為準。
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const races = [
+      {
+        id: "chiangmai", group: "urgent", name: "HOKA Chiang Mai Thailand by UTMB",
+        dates: "27–29 Nov + 3–6 Dec 2026", place: "Chiang Mai / Doi Inthanon, Thailand",
+        distances: "160 · 100 · 50 · 20s", status: "Closing 31 Oct 2026 10:00 GMT+7", tag: "urgent",
+        note: "Asia-Pacific Major · double Running Stones. Several distances already full.",
+        url: "https://chiangmai.utmb.world/races-runners/runners/registration",
+        lat: 18.7883, lng: 98.9853
+      },
+      {
+        id: "gpt", group: "urgent", name: "Grampians Peaks Trail 100 Miler",
+        dates: "5–8 Nov 2026", place: "Halls Gap, Victoria, Australia",
+        distances: "100M · stages · 50K · 33K · 14K · 6K", status: "Entries close 29 Oct 2026", tag: "urgent",
+        note: "Australian 100 Mile Championship · World Trail Majors.",
+        url: "https://www.gpt100.com.au/fees-key-dates",
+        lat: -37.1405, lng: 142.5208
+      },
+      {
+        id: "restonica", group: "urgent", name: "Restonica Trail by UTMB 2027",
+        dates: "~7–10 Jul 2027", place: "Corsica, France",
+        distances: "Multi-distance UTMB event", status: "Reg opens ~27–29 Oct 2026", tag: "urgent",
+        note: "Reduced field sizes + new Boziu course for 2027.",
+        url: "https://restonica.utmb.world/",
+        lat: 42.3097, lng: 9.1494
+      },
+      {
+        id: "wser", group: "urgent", name: "Western States 100",
+        dates: "26–27 Jun 2027", place: "Olympic Valley → Auburn, USA",
+        distances: "100 miles", status: "Lottery 1–21 Nov 2026", tag: "urgent",
+        note: "Draw 5 Dec 2026. Need approved qualifier.",
+        url: "https://www.wser.org/entry-process/",
+        lat: 39.1964, lng: -120.2357
+      },
+      {
+        id: "fuji", group: "urgent", name: "Mt. FUJI 100",
+        dates: "~23 Apr 2027", place: "Shizuoka, Japan",
+        distances: "100mi · 70K · 40K · shorter", status: "Ballot 2–15 Nov 2026", tag: "urgent",
+        note: "World Trail Majors. Results ~1 Dec.",
+        url: "https://worldtrailmajors.com/world-trail-majors-2026-calendar/",
+        lat: 35.3606, lng: 138.7274
+      },
+      {
+        id: "kosci", group: "upcoming", name: "Ultra-Trail Kosciuszko by UTMB",
+        dates: "26–28 Nov 2026", place: "Jindabyne, NSW, Australia",
+        distances: "30 · 50 · 100 · 100M", status: "Sold out", tag: "full",
+        note: "Overlaps Chiang Mai week — waitlist/transfers only.",
+        url: "https://kosciuszko.utmb.world/runners/entry-info",
+        lat: -36.4150, lng: 148.6200
+      },
+      {
+        id: "oman", group: "upcoming", name: "Oman by UTMB",
+        dates: "10–12 Dec 2026", place: "Hajar Mountains, Oman",
+        distances: "100M · 100K · 50K · 30K · 20K", status: "Open", tag: "open",
+        note: "New 2026 Series event. No waitlist.",
+        url: "https://oman.utmb.world/registration",
+        lat: 23.2156, lng: 57.3350
+      },
+      {
+        id: "tarawera", group: "upcoming", name: "Tarawera Ultra-Trail by UTMB",
+        dates: "13–14 Feb 2027", place: "Rotorua, New Zealand",
+        distances: "TMiler · T102 · T50 · T21", status: "Open", tag: "open",
+        note: "TMiler needs 50K+ trail qualifier.",
+        url: "https://tarawera.utmb.world/runners/entry-info",
+        lat: -38.1368, lng: 176.2497
+      },
+      {
+        id: "kenting", group: "upcoming", name: "HOKA Xtrail Kenting by UTMB",
+        dates: "5–7 Mar 2027", place: "Kenting, Taiwan",
+        distances: "100K · 50K · 25K · 10K", status: "Open until 31 Dec 2026", tag: "open",
+        note: "Easy flight from HK. 100K needs UTMB Index 50K+.",
+        url: "https://xtrail.utmb.world/",
+        lat: 21.9483, lng: 120.7790
+      },
+      {
+        id: "uta", group: "upcoming", name: "Ultra-Trail Australia by UTMB",
+        dates: "13–16 May 2027", place: "Blue Mountains, NSW, Australia",
+        distances: "100 · 50 · shorter", status: "General sold out", tag: "full",
+        note: "Oceania Major · double Stones. Charity bibs may remain.",
+        url: "https://uta.utmb.world/runners/entry-info",
+        lat: -33.7152, lng: 150.3120
+      },
+      {
+        id: "vda", group: "upcoming", name: "HOKA Val d’Aran by UTMB",
+        dates: "7–11 Jul 2027", place: "Val d’Aran, Spain",
+        distances: "163K · 110K · shorter", status: "Long distances open", tag: "open",
+        note: "Europe Major · double Stones. Shorter distances mostly full.",
+        url: "https://valdarandelspirits.utmb.world/",
+        lat: 42.7000, lng: 0.8000
+      },
+      {
+        id: "malaysia", group: "upcoming", name: "Malaysia Ultra-Trail by UTMB",
+        dates: "4–5 Sep 2027", place: "Taiping, Perak, Malaysia",
+        distances: "MY100 · MY50 · MY25 · MY13", status: "Open", tag: "open",
+        note: "Very accessible from Hong Kong.",
+        url: "https://malaysia.utmb.world/runners/entry-info",
+        lat: 4.8500, lng: 100.7333
+      },
+      {
+        id: "vmm", group: "watch", name: "Vietnam Mountain Marathon",
+        dates: "2027 TBA (2026 was 17–20 Sep)", place: "Sapa, Vietnam",
+        distances: "WTM distances TBA", status: "2027 entry TBA", tag: "full",
+        note: "2026 sold out. Watch for 2027 date.",
+        url: "https://worldtrailmajors.com/",
+        lat: 22.3400, lng: 103.8440
+      },
+      {
+        id: "hiroshima", group: "watch", name: "Hiroshima Ultra-Trail by UTMB",
+        dates: "9–11 Apr 2027", place: "Hiroshima, Japan",
+        distances: "UTMB distances", status: "Sold out / waitlist", tag: "full",
+        note: "Waitlist only.",
+        url: "https://hiroshima.utmb.world/",
+        lat: 34.3853, lng: 132.4553
+      },
+      {
+        id: "utmb", group: "watch", name: "HOKA UTMB Mont-Blanc 2027",
+        dates: "Late Aug / early Sep 2027", place: "Chamonix, France",
+        distances: "OCC · CCC · UTMB · TDS · PTL", status: "Lottery ~early Jan 2027", tag: "full",
+        note: "Needs ≥1 Running Stone typically.",
+        url: "https://montblanc.utmb.world/",
+        lat: 45.9237, lng: 6.8694
+      }
+    ];
+
+    const tagLabel = { urgent: "最急", open: "報名中", full: "已滿 / 抽籤" };
+
+    function renderCards(filter = "all") {
+      ["urgent", "upcoming", "watch"].forEach(g => {
+        const section = document.querySelector(`section[data-section="${g}"]`);
+        const el = document.getElementById(g);
+        el.innerHTML = "";
+        const list = races.filter(r => r.group === g && (filter === "all" || filter === g));
+        section.style.display = list.length ? "" : "none";
+        list.forEach(r => {
+          const card = document.createElement("article");
+          card.className = "card";
+          card.dataset.id = r.id;
+          card.innerHTML = `
+            <span class="tag ${r.tag}">${tagLabel[r.tag] || r.status}</span>
+            <h3>${r.name}</h3>
+            <div class="meta">${r.dates}<br>${r.place}</div>
+            <div class="meta">${r.distances}</div>
+            <div class="note">${r.note}</div>
+            <div class="meta"><strong>${r.status}</strong></div>
+            <a href="${r.url}" target="_blank" rel="noopener">Official / source →</a>`;
+          card.addEventListener("click", (e) => {
+            if (e.target.tagName === "A") return;
+            map.setView([r.lat, r.lng], 5);
+            markers[r.id].openPopup();
+          });
+          el.appendChild(card);
+        });
+      });
+    }
+
+    const map = L.map("map", { scrollWheelZoom: false, worldCopyJump: true }).setView([20, 40], 2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+      maxZoom: 18
+    }).addTo(map);
+
+    const markers = {};
+    races.forEach(r => {
+      const color = r.tag === "urgent" ? "#ff4d6d" : r.tag === "open" ? "#5eead4" : "#93a0bb";
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+      const m = L.marker([r.lat, r.lng], { icon }).addTo(map);
+      m.bindPopup(`<strong>${r.name}</strong><br>${r.dates}<br>${r.place}<br><a href="${r.url}" target="_blank">Details</a>`);
+      m.on("click", () => {
+        document.querySelectorAll(".card").forEach(c => c.style.outline = "");
+        const card = document.querySelector(`.card[data-id="${r.id}"]`);
+        if (card) { card.style.outline = "2px solid #3dd6c6"; card.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+      });
+      markers[r.id] = m;
+    });
+
+    document.getElementById("filters").addEventListener("click", (e) => {
+      if (e.target.tagName !== "BUTTON") return;
+      document.querySelectorAll("#filters button").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      renderCards(e.target.dataset.filter);
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
